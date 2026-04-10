@@ -24,9 +24,7 @@ logger = logging.getLogger("mcp-obsidian")
 
 api_key = os.getenv("OBSIDIAN_API_KEY")
 if not api_key:
-    raise ValueError(
-        f"OBSIDIAN_API_KEY environment variable required. Working directory: {os.getcwd()}"
-    )
+    raise ValueError(f"OBSIDIAN_API_KEY environment variable required. Working directory: {os.getcwd()}")
 
 app = Server("mcp-obsidian")
 
@@ -69,9 +67,7 @@ async def list_tools() -> list[Tool]:
 
 
 @app.call_tool()
-async def call_tool(
-    name: str, arguments: Any
-) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
+async def call_tool(name: str, arguments: Any) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
     """Handle tool calls for command line run."""
 
     if not isinstance(arguments, dict):
@@ -85,7 +81,7 @@ async def call_tool(
         return tool_handler.run_tool(arguments)
     except Exception as e:
         logger.error(str(e))
-        raise RuntimeError(f"Caught Exception. Error: {str(e)}")
+        raise RuntimeError(f"Caught Exception. Error: {e!s}") from e
 
 
 async def main():

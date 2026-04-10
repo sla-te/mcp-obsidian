@@ -5,22 +5,19 @@ description = "MCP server to work with Obsidian via the remote REST plugin"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
- "mcp>=1.1.0",
- "pip_system_certs",
- "python-dotenv>=1.0.1",
- "httpx[http2]>=0.28.0",
- "click>=8.0.0",
+    "mcp>=1.1.0",
+    "pip_system_certs",
+    "python-dotenv>=1.0.1",
+    "click>=8.0.0",
+    "httpx[http2]>=0.28.0",
 ]
 
 [build-system]
-requires = [ "hatchling",]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.389",
-    "pytest>=9.0.3",
-]
+dev = ["pytest>=9.0.3"]
 
 [project.scripts]
 mcp-obsidian = "mcp_obsidian:main"
@@ -31,17 +28,14 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
+line-length = 120
+src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
-ignore = ["E402"]  # Allow imports after load_dotenv() calls
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["F401"]  # Allow unused imports in tests
-"src/mcp_obsidian/tools.py" = ["E501"]  # MCP tool descriptions are long strings
+extend-select = ["I", "B", "UP", "SIM"]
+ignore = ["T201", "SIM117", "E402"]  # SIM117: nested with clearer in tests; E402: imports after load_dotenv
 
 [tool.basedpyright]
-pythonVersion = "3.11"
-pythonPlatform = "All"
-typeCheckingMode = "standard"
+pythonVersion = "3.14"
+typeCheckingMode = "recommended"
+reportMissingTypeStubs = false

@@ -43,10 +43,7 @@ def list_files(ctx: click.Context, directory: str | None) -> None:
     """List files in the vault root or a specific directory."""
     client = get_obsidian_client()
 
-    if directory:
-        files = client.list_files_in_dir(directory)
-    else:
-        files = client.list_files_in_vault()
+    files = client.list_files_in_dir(directory) if directory else client.list_files_in_vault()
 
     if ctx.obj["json"]:
         output.print_json(files)
@@ -204,9 +201,7 @@ def read_content(content: str | None, file: str | None) -> str:
     help="Read content from file",
 )
 @click.pass_context
-def put_content(
-    ctx: click.Context, filepath: str, content: str | None, content_file: str | None
-) -> None:
+def put_content(ctx: click.Context, filepath: str, content: str | None, content_file: str | None) -> None:
     """Create or overwrite a file."""
     text = read_content(content, content_file)
     client = get_obsidian_client()
@@ -228,9 +223,7 @@ def put_content(
     help="Read content from file",
 )
 @click.pass_context
-def append_content(
-    ctx: click.Context, filepath: str, content: str | None, content_file: str | None
-) -> None:
+def append_content(ctx: click.Context, filepath: str, content: str | None, content_file: str | None) -> None:
     """Append content to a file (creates if doesn't exist)."""
     text = read_content(content, content_file)
     client = get_obsidian_client()

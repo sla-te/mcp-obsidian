@@ -15,9 +15,7 @@ api_key = os.getenv("OBSIDIAN_API_KEY", "")
 obsidian_host = os.getenv("OBSIDIAN_HOST", "127.0.0.1")
 
 if api_key == "":
-    raise ValueError(
-        f"OBSIDIAN_API_KEY environment variable required. Working directory: {os.getcwd()}"
-    )
+    raise ValueError(f"OBSIDIAN_API_KEY environment variable required. Working directory: {os.getcwd()}")
 
 TOOL_LIST_FILES_IN_VAULT = "obsidian_list_files_in_vault"
 TOOL_LIST_FILES_IN_DIR = "obsidian_list_files_in_dir"
@@ -161,9 +159,7 @@ class SearchToolHandler(ToolHandler):
                 start = match_pos.get("start", 0)
                 end = match_pos.get("end", 0)
 
-                formatted_matches.append(
-                    {"context": context, "match_position": {"start": start, "end": end}}
-                )
+                formatted_matches.append({"context": context, "match_position": {"start": start, "end": end}})
 
             formatted_results.append(
                 {
@@ -208,9 +204,7 @@ class AppendContentToolHandler(ToolHandler):
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
         api.append_content(args.get("filepath", ""), args["content"])
 
-        return [
-            TextContent(type="text", text=f"Successfully appended content to {args['filepath']}")
-        ]
+        return [TextContent(type="text", text=f"Successfully appended content to {args['filepath']}")]
 
 
 class PatchContentToolHandler(ToolHandler):
@@ -256,12 +250,8 @@ class PatchContentToolHandler(ToolHandler):
         )
 
     def run_tool(self, args: dict) -> Sequence[TextContent | ImageContent | EmbeddedResource]:
-        if not all(
-            k in args for k in ["filepath", "operation", "target_type", "target", "content"]
-        ):
-            raise RuntimeError(
-                "filepath, operation, target_type, target and content arguments required"
-            )
+        if not all(k in args for k in ["filepath", "operation", "target_type", "target", "content"]):
+            raise RuntimeError("filepath, operation, target_type, target and content arguments required")
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
         api.patch_content(
@@ -272,9 +262,7 @@ class PatchContentToolHandler(ToolHandler):
             args.get("content", ""),
         )
 
-        return [
-            TextContent(type="text", text=f"Successfully patched content in {args['filepath']}")
-        ]
+        return [TextContent(type="text", text=f"Successfully patched content in {args['filepath']}")]
 
 
 class PutContentToolHandler(ToolHandler):
@@ -309,9 +297,7 @@ class PutContentToolHandler(ToolHandler):
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
         api.put_content(args.get("filepath", ""), args["content"])
 
-        return [
-            TextContent(type="text", text=f"Successfully uploaded content to {args['filepath']}")
-        ]
+        return [TextContent(type="text", text=f"Successfully uploaded content to {args['filepath']}")]
 
 
 class DeleteFileToolHandler(ToolHandler):
@@ -482,17 +468,15 @@ class PeriodicNotesToolHandler(ToolHandler):
         period = args["period"]
         valid_periods = ["daily", "weekly", "monthly", "quarterly", "yearly"]
         if period not in valid_periods:
-            raise RuntimeError(
-                f"Invalid period: {period}. Must be one of: {', '.join(valid_periods)}"
-            )
+            raise RuntimeError(f"Invalid period: {period}. Must be one of: {', '.join(valid_periods)}")
 
-        type = args["type"] if "type" in args else "content"
+        note_type = args.get("type", "content")
         valid_types = ["content", "metadata"]
-        if type not in valid_types:
-            raise RuntimeError(f"Invalid type: {type}. Must be one of: {', '.join(valid_types)}")
+        if note_type not in valid_types:
+            raise RuntimeError(f"Invalid type: {note_type}. Must be one of: {', '.join(valid_types)}")
 
         api = obsidian.Obsidian(api_key=api_key, host=obsidian_host)
-        content = api.get_periodic_note(period, type)
+        content = api.get_periodic_note(period, note_type)
 
         return [TextContent(type="text", text=content)]
 
@@ -537,9 +521,7 @@ class RecentPeriodicNotesToolHandler(ToolHandler):
         period = args["period"]
         valid_periods = ["daily", "weekly", "monthly", "quarterly", "yearly"]
         if period not in valid_periods:
-            raise RuntimeError(
-                f"Invalid period: {period}. Must be one of: {', '.join(valid_periods)}"
-            )
+            raise RuntimeError(f"Invalid period: {period}. Must be one of: {', '.join(valid_periods)}")
 
         limit = args.get("limit", 5)
         if not isinstance(limit, int) or limit < 1:

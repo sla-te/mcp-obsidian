@@ -190,9 +190,7 @@ class TestSearch:
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
             with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
-                result = runner.invoke(
-                    cli, ["search-complex", '{"glob": ["*.md", {"var": "path"}]}']
-                )
+                result = runner.invoke(cli, ["search-complex", '{"glob": ["*.md", {"var": "path"}]}'])
 
         assert result.exit_code == 0
         mock_obsidian.search_json.assert_called_once()
@@ -351,9 +349,7 @@ class TestErrorHandling:
         """Test error when Obsidian is not reachable."""
         runner = CliRunner()
         mock_obsidian = MagicMock()
-        mock_obsidian.list_files_in_vault.side_effect = Exception(
-            "Request failed: Connection refused"
-        )
+        mock_obsidian.list_files_in_vault.side_effect = Exception("Request failed: Connection refused")
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
             with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):

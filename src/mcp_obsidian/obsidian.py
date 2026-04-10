@@ -61,9 +61,9 @@ class Obsidian:
                 error_data = {}
             code = error_data.get("errorCode", -1)
             message = error_data.get("message", "<unknown>")
-            raise Exception(f"Error {code}: {message}")
+            raise Exception(f"Error {code}: {message}") from e
         except httpx.RequestError as e:
-            raise Exception(f"Request failed: {str(e)}")
+            raise Exception(f"Request failed: {e!s}") from e
 
     def list_files_in_vault(self) -> Any:
         url = f"{self.get_base_url()}/vault/"
@@ -141,9 +141,7 @@ class Obsidian:
 
         return self._safe_call(call_fn)
 
-    def patch_content(
-        self, filepath: str, operation: str, target_type: str, target: str, content: str
-    ) -> Any:
+    def patch_content(self, filepath: str, operation: str, target_type: str, target: str, content: str) -> Any:
         url = f"{self.get_base_url()}/vault/{filepath}"
 
         headers = self._get_headers() | {
@@ -228,9 +226,7 @@ class Obsidian:
 
         return self._safe_call(call_fn)
 
-    def get_recent_periodic_notes(
-        self, period: str, limit: int = 5, include_content: bool = False
-    ) -> Any:
+    def get_recent_periodic_notes(self, period: str, limit: int = 5, include_content: bool = False) -> Any:
         """Get most recent periodic notes for the specified period type.
 
         Args:
