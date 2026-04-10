@@ -29,3 +29,19 @@ obs = "cli_obsidian:main"
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E402"]  # Allow imports after load_dotenv() calls
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F401"]  # Allow unused imports in tests
+"src/mcp_obsidian/tools.py" = ["E501"]  # MCP tool descriptions are long strings
+
+[tool.basedpyright]
+pythonVersion = "3.11"
+pythonPlatform = "All"
+typeCheckingMode = "standard"

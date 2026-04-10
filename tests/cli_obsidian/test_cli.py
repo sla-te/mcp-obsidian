@@ -1,6 +1,8 @@
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from click.testing import CliRunner
+
 from cli_obsidian.cli import cli
 
 
@@ -75,8 +77,7 @@ class TestGetFiles:
         runner = CliRunner()
         mock_obsidian = MagicMock()
         mock_obsidian.get_batch_file_contents.return_value = (
-            "# notes/a.md\n\nContent A\n\n---\n\n"
-            "# notes/b.md\n\nContent B\n\n---\n\n"
+            "# notes/a.md\n\nContent A\n\n---\n\n# notes/b.md\n\nContent B\n\n---\n\n"
         )
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
@@ -86,9 +87,7 @@ class TestGetFiles:
         assert result.exit_code == 0
         assert "Content A" in result.output
         assert "Content B" in result.output
-        mock_obsidian.get_batch_file_contents.assert_called_once_with(
-            ["notes/a.md", "notes/b.md"]
-        )
+        mock_obsidian.get_batch_file_contents.assert_called_once_with(["notes/a.md", "notes/b.md"])
 
     def test_get_file_json_output(self) -> None:
         """Test getting file with JSON output."""
@@ -191,7 +190,9 @@ class TestSearch:
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
             with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
-                result = runner.invoke(cli, ["search-complex", '{"glob": ["*.md", {"var": "path"}]}'])
+                result = runner.invoke(
+                    cli, ["search-complex", '{"glob": ["*.md", {"var": "path"}]}']
+                )
 
         assert result.exit_code == 0
         mock_obsidian.search_json.assert_called_once()
@@ -312,13 +313,21 @@ class TestContentCommands:
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
             with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
-                result = runner.invoke(cli, [
-                    "patch", "notes/todo.md",
-                    "-o", "append",
-                    "-t", "heading",
-                    "-T", "## Tasks",
-                    "-c", "- New task",
-                ])
+                result = runner.invoke(
+                    cli,
+                    [
+                        "patch",
+                        "notes/todo.md",
+                        "-o",
+                        "append",
+                        "-t",
+                        "heading",
+                        "-T",
+                        "## Tasks",
+                        "-c",
+                        "- New task",
+                    ],
+                )
 
         assert result.exit_code == 0
         mock_obsidian.patch_content.assert_called_once_with(
