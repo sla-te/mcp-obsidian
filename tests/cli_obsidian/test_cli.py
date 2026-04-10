@@ -300,7 +300,7 @@ class TestContentCommands:
 
         with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
             with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
-                result = runner.invoke(cli, ["append", "notes/log.md", "- New entry"])
+                result = runner.invoke(cli, ["append", "notes/log.md", "--", "- New entry"])
 
         assert result.exit_code == 0
         mock_obsidian.append_content.assert_called_once_with("notes/log.md", "- New entry")
