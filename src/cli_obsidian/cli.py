@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json as json_module
 import os
 import sys
 from typing import TYPE_CHECKING
@@ -141,6 +142,44 @@ def delete_file(ctx: click.Context, filepath: str, confirm: bool) -> None:
         output.print_json({"status": "success", "deleted": filepath})
     else:
         output.print_success(f"Deleted {filepath}")
+
+
+@cli.command("search")
+@click.argument("query")
+@click.option("--context-length", "-c", default=100, help="Context around matches (default: 100)")
+@click.pass_context
+def search(ctx: click.Context, query: str, context_length: int) -> None:
+    """Simple text search across the vault."""
+    client = get_obsidian_client()
+    results = client.search(query, context_length)
+
+    if ctx.obj["json"]:
+        output.print_json(results)
+    else:
+        output.format_search_results(results)
+
+
+@cli.command("search-complex")
+@click.argument("query", required=False)
+@click.option("--file", "query_file", type=click.Path(exists=True), help="Read query from file")
+@click.pass_context
+def search_complex(ctx: click.Context, query: str | None, query_file: str | None) -> None:
+    """Advanced search using JsonLogic query."""
+    if query_file:
+        with open(query_file) as f:
+            query_obj = json_module.load(f)
+    elif query:
+        query_obj = json_module.loads(query)
+    else:
+        raise click.ClickException("Provide query as argument or via --file")
+
+    client = get_obsidian_client()
+    results = client.search_json(query_obj)
+
+    if ctx.obj["json"]:
+        output.print_json(results)
+    else:
+        output.print_lines(results if isinstance(results, list) else [str(results)])
 
 
 def read_content(content: str | None, file: str | None) -> str:
