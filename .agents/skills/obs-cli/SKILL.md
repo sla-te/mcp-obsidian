@@ -10,7 +10,7 @@ Obsidian vault operations via Local REST API plugin.
 ## Invocation
 
 ```bash
-uv run --project C:\Users\RE99990521\code\tooling\mcp-obsidian obs <command>
+uv run --project ~/code/tooling/mcp-obsidian python -m cli_obsidian <command>
 ```
 
 Requires: `OBSIDIAN_API_KEY` env var (from Obsidian Local REST API plugin settings)
