@@ -324,3 +324,33 @@ class TestContentCommands:
         mock_obsidian.patch_content.assert_called_once_with(
             "notes/todo.md", "append", "heading", "## Tasks", "- New task"
         )
+
+
+class TestErrorHandling:
+    def test_missing_api_key(self) -> None:
+        """Test error when API key is missing."""
+        runner = CliRunner()
+
+        # Clear the environment to ensure no API key
+        with patch.dict(os.environ, {}, clear=True):
+            result = runner.invoke(cli, ["list-files"])
+
+        assert result.exit_code != 0
+        assert "OBSIDIAN_API_KEY" in result.output
+
+    def test_connection_error(self) -> None:
+        """Test error when Obsidian is not reachable."""
+        runner = CliRunner()
+        mock_obsidian = MagicMock()
+        mock_obsidian.list_files_in_vault.side_effect = Exception(
+            "Request failed: Connection refused"
+        )
+
+        with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
+            with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
+                result = runner.invoke(cli, ["list-files"])
+
+        assert result.exit_code != 0
+        # Exception is captured in result.exception when not handled by the CLI
+        assert result.exception is not None
+        assert "Connection refused" in str(result.exception)
