@@ -141,3 +141,69 @@ def delete_file(ctx: click.Context, filepath: str, confirm: bool) -> None:
         output.print_json({"status": "success", "deleted": filepath})
     else:
         output.print_success(f"Deleted {filepath}")
+
+
+def read_content(content: str | None, file: str | None) -> str:
+    """Read content from argument, file, or stdin."""
+    if file:
+        with open(file) as f:
+            return f.read()
+    if content == "-":
+        return sys.stdin.read()
+    if content:
+        return content
+    raise click.ClickException("Content required (argument, --file, or - for stdin)")
+
+
+@cli.command("put")
+@click.argument("filepath")
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def put_content(ctx: click.Context, filepath: str, content: str | None, content_file: str | None) -> None:
+    """Create or overwrite a file."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.put_content(filepath, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "filepath": filepath})
+    else:
+        output.print_success(f"Created/updated {filepath}")
+
+
+@cli.command("append")
+@click.argument("filepath")
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def append_content(ctx: click.Context, filepath: str, content: str | None, content_file: str | None) -> None:
+    """Append content to a file (creates if doesn't exist)."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.append_content(filepath, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "filepath": filepath})
+    else:
+        output.print_success(f"Appended to {filepath}")
+
+
+@cli.command("patch")
+@click.argument("filepath")
+@click.option("--operation", "-o", type=click.Choice(["append", "prepend", "replace"]), required=True, help="Operation to perform")
+@click.option("--target-type", "-t", type=click.Choice(["heading", "block", "frontmatter"]), required=True, help="Type of target")
+@click.option("--target", "-T", required=True, help="Target identifier")
+@click.option("--content", "-c", help="Content to insert")
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def patch_content(ctx: click.Context, filepath: str, operation: str, target_type: str, target: str, content: str | None, content_file: str | None) -> None:
+    """Insert content relative to a heading, block reference, or frontmatter field."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.patch_content(filepath, operation, target_type, target, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "filepath": filepath})
+    else:
+        output.print_success(f"Patched {filepath}")
