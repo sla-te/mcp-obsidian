@@ -1,139 +1,101 @@
 ---
 name: obs-cli
-description: "Obsidian vault operations via CLI. Use when the user wants to read, write, search, or manage files in their Obsidian vault. Triggers on: Obsidian, vault, daily notes, periodic notes, markdown notes, knowledge base, PKM, second brain. Always use this skill for Obsidian operations - the obs CLI is faster than manual file operations."
+description: "Obsidian vault CLI via Local REST API. Use for: reading/writing vault files, searching notes, managing daily/periodic notes, bulk operations on markdown. Triggers: Obsidian, vault, daily notes, PKM, knowledge base, second brain. Prefer obs over manual file ops — it handles the API correctly."
 ---
 
-# Obsidian CLI (obs)
+# obs CLI
 
-CLI tool for interacting with Obsidian vaults via the Local REST API plugin.
+Obsidian vault operations via Local REST API plugin.
 
 ## Invocation
 
 ```bash
-uv run --project C:\Users\RE99990521\code\tooling\mcp-obsidian obs <command> [options]
+uv run --project C:\Users\RE99990521\code\tooling\mcp-obsidian obs <command>
 ```
 
-## Environment
+Requires: `OBSIDIAN_API_KEY` env var (from Obsidian Local REST API plugin settings)
 
-Requires `OBSIDIAN_API_KEY` environment variable. Get from Obsidian Local REST API plugin settings.
+## Command Selection
 
-Optional:
-- `OBSIDIAN_HOST` (default: 127.0.0.1)
-- `OBSIDIAN_PORT` (default: 27124)
+| Goal | Use | NOT This |
+|------|-----|----------|
+| Add to existing note | `append` | `put` (OVERWRITES!) |
+| Update specific section | `patch -t heading` | `append` (wrong location) |
+| Find by text content | `search` | `list-files` (names only) |
+| Find by path pattern | `search-complex` + glob | `search` (content only) |
+| Find by content + path | `search-complex` + and | Two separate searches |
+| Create new file | `put` | `append` (works but unclear intent) |
 
-## Commands
+### Search Decision Tree
 
-### List Files
+- Need full-text search? → `obs search "query"`
+- Need path filtering? → `obs search-complex '{"glob": ["*.md", {"var": "path"}]}'`
+- Need content + path? → `obs search-complex '{"and": [{"glob": [...]}, {"regexp": [...]}]}'`
 
-```bash
-# List vault root
-obs list-files
+## NEVER
 
-# List directory
-obs list-files "Projects/"
+- **NEVER use `put` to add content** — it OVERWRITES the entire file. Use `append` or `patch`.
+- **NEVER forget `--confirm` for delete** — no undo exists. The flag is mandatory.
+- **NEVER use absolute paths** — all paths are vault-relative. `/notes/file.md` fails.
+- **NEVER assume JsonLogic = JSON** — the syntax is specific:
+  - WRONG: `{"path": "*.md"}`
+  - RIGHT: `{"glob": ["*.md", {"var": "path"}]}`
+- **NEVER pipe binary files** — `obs get` returns text only.
 
-# JSON output
-obs --json list-files
-```
+## Key Patterns
 
-### Read Files
-
-```bash
-# Single file
-obs get "notes/meeting.md"
-
-# Multiple files (concatenated with headers)
-obs get "file1.md" "file2.md" "file3.md"
-```
-
-### Search
+### Patch to heading (most useful write operation)
 
 ```bash
-# Simple text search
-obs search "kubernetes"
-obs search "query" --context-length 200
-
-# Advanced JsonLogic search
-obs search-complex '{"glob": ["*.md", {"var": "path"}]}'
-obs search-complex '{"and": [{"glob": ["Projects/*.md", {"var": "path"}]}, {"regexp": ["urgent", {"var": "content"}]}]}'
-```
-
-### Write Content
-
-```bash
-# Create/overwrite file
-obs put "notes/new.md" "# New Note"
-obs put "notes/copy.md" --file original.md
-
-# Append to file
-obs append "log.md" "- New entry"
-
-# Patch relative to heading/block
-obs patch "note.md" -o append -t heading -T "## Tasks" -c "- New task"
+obs patch "note.md" -o append -t heading -T "## Tasks" -c "- [ ] New task"
+obs patch "note.md" -o prepend -t heading -T "## Log" -c "Entry at top"
 obs patch "note.md" -o replace -t frontmatter -T "status" -c "done"
 ```
 
-### Delete
+### Search + process results
 
 ```bash
-# Requires --confirm flag
-obs delete "old-note.md" --confirm
-obs delete "archive/temp.md" -y
-```
-
-### Periodic Notes
-
-```bash
-# Current daily/weekly/monthly note
-obs periodic daily
-obs periodic weekly --metadata
-
-# Recent periodic notes
-obs periodic-recent daily --limit 7
-obs periodic-recent weekly -l 3 --include-content
-```
-
-### Recent Changes
-
-```bash
-# Recently modified files
-obs recent-changes
-obs recent-changes --limit 20 --days 30
-```
-
-## Output Formats
-
-- Default: Human-readable
-- `--json` or `-j`: JSON output for parsing
-
-## Examples
-
-```bash
-# Get today's daily note and append a task
-obs periodic daily
-obs patch "Daily Notes/2026-04-10.md" -o append -t heading -T "## Tasks" -c "- [ ] Review PRs"
-
-# Search for todos and get matching files
-obs search "TODO" --context-length 50
-
-# Backup recent notes
-for file in $(obs --json recent-changes | jq -r '.[].filename'); do
-    obs get "$file" > "backup/$file"
+obs --json search "TODO" | jq -r '.[].filename' | while read f; do
+  echo "=== $f ===" && obs get "$f"
 done
-
-# Create note from template
-obs put "Projects/new-project.md" "# New Project
-
-## Overview
-
-## Tasks
-
-## Notes
-"
 ```
 
-## Error Handling
+### Get daily note path programmatically
 
-- Missing API key: Set `OBSIDIAN_API_KEY` environment variable
-- Connection failed: Ensure Obsidian is running with Local REST API plugin enabled
-- File not found: Check file path is relative to vault root
+```bash
+# Get path from metadata, then use it
+obs --json periodic daily --metadata | jq -r .path
+```
+
+### Bulk read matching files
+
+```bash
+obs --json search-complex '{"glob": ["Projects/*.md", {"var": "path"}]}' \
+  | jq -r '.[]' | xargs obs get
+```
+
+### Safe edit pattern (backup first)
+
+```bash
+obs get "critical.md" > /tmp/backup.md  # Always backup
+obs put "critical.md" "new content"      # Then overwrite
+```
+
+## Quick Reference
+
+| Flag | Effect |
+|------|--------|
+| `--json`, `-j` | JSON output (use with jq) |
+| `--confirm`, `-y` | Required for delete |
+| `--metadata`, `-m` | Include file metadata |
+| `--limit`, `-l` | Max results for lists |
+
+Run `obs <command> --help` for full options on any command.
+
+## Common Errors
+
+| Error | Fix |
+|-------|-----|
+| "OBSIDIAN_API_KEY not set" | Export the env var from plugin settings |
+| "Connection refused" | Obsidian not running or plugin disabled |
+| "404 Not Found" | Path is wrong — remember: vault-relative, no leading `/` |
