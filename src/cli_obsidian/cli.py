@@ -278,3 +278,276 @@ def patch_content(
         output.print_json({"status": "success", "filepath": filepath})
     else:
         output.print_success(f"Patched {filepath}")
+
+
+# =============================================================================
+# Server & Status Commands
+# =============================================================================
+
+
+@cli.command("status")
+@click.pass_context
+def server_status(ctx: click.Context) -> None:
+    """Get server info and connection status."""
+    client = get_obsidian_client()
+    info = client.get_server_info()
+
+    if ctx.obj["json"]:
+        output.print_json(info)
+    else:
+        print("Status: OK")
+        print(f"Authenticated: {info.get('authenticated', 'unknown')}")
+        if "versions" in info:
+            print(f"Obsidian: {info['versions'].get('obsidian', 'unknown')}")
+            print(f"API: {info['versions'].get('self', 'unknown')}")
+
+
+# =============================================================================
+# Active File Commands
+# =============================================================================
+
+
+@cli.command("active")
+@click.option("--metadata", "-m", is_flag=True, help="Include metadata instead of just content")
+@click.pass_context
+def get_active(ctx: click.Context, metadata: bool) -> None:
+    """Get the currently active file in Obsidian."""
+    client = get_obsidian_client()
+    note_type = "metadata" if metadata else "content"
+    content = client.get_active_file(note_type)
+
+    if ctx.obj["json"]:
+        output.print_json(content)
+    else:
+        print(content)
+
+
+@cli.command("active-append")
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def active_append(ctx: click.Context, content: str | None, content_file: str | None) -> None:
+    """Append content to the active file."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.append_active(text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "action": "appended to active"})
+    else:
+        output.print_success("Appended to active file")
+
+
+@cli.command("active-put")
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def active_put(ctx: click.Context, content: str | None, content_file: str | None) -> None:
+    """Replace content of the active file."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.put_active(text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "action": "replaced active"})
+    else:
+        output.print_success("Replaced active file content")
+
+
+@cli.command("active-patch")
+@click.option(
+    "--operation", "-o",
+    type=click.Choice(["append", "prepend", "replace"]),
+    required=True,
+    help="Operation to perform",
+)
+@click.option(
+    "--target-type", "-t",
+    type=click.Choice(["heading", "block", "frontmatter"]),
+    required=True,
+    help="Type of target",
+)
+@click.option("--target", "-T", required=True, help="Target identifier")
+@click.option("--content", "-c", help="Content to insert")
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def active_patch(
+    ctx: click.Context,
+    operation: str,
+    target_type: str,
+    target: str,
+    content: str | None,
+    content_file: str | None,
+) -> None:
+    """Patch content in the active file relative to a target."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.patch_active(operation, target_type, target, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "action": "patched active"})
+    else:
+        output.print_success("Patched active file")
+
+
+@cli.command("active-delete")
+@click.option("--confirm", "-y", is_flag=True, help="Confirm deletion (required)")
+@click.pass_context
+def active_delete(ctx: click.Context, confirm: bool) -> None:
+    """Delete the currently active file."""
+    if not confirm:
+        raise click.ClickException("Deletion requires --confirm or -y flag to prevent accidents")
+
+    client = get_obsidian_client()
+    client.delete_active()
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "action": "deleted active"})
+    else:
+        output.print_success("Deleted active file")
+
+
+# =============================================================================
+# Command Execution
+# =============================================================================
+
+
+@cli.command("commands")
+@click.pass_context
+def list_commands(ctx: click.Context) -> None:
+    """List available Obsidian commands."""
+    client = get_obsidian_client()
+    commands = client.list_commands()
+
+    if ctx.obj["json"]:
+        output.print_json(commands)
+    else:
+        cmd_list = commands.get("commands", commands)
+        for cmd in cmd_list:
+            cmd_id = cmd.get("id", str(cmd))
+            cmd_name = cmd.get("name", "")
+            print(f"{cmd_id}: {cmd_name}" if cmd_name else cmd_id)
+
+
+@cli.command("run")
+@click.argument("command_id")
+@click.pass_context
+def run_command(ctx: click.Context, command_id: str) -> None:
+    """Execute an Obsidian command by ID."""
+    client = get_obsidian_client()
+    client.execute_command(command_id)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "command": command_id})
+    else:
+        output.print_success(f"Executed command: {command_id}")
+
+
+@cli.command("open")
+@click.argument("filepath")
+@click.option("--new-pane", "-n", is_flag=True, help="Open in a new pane")
+@click.pass_context
+def open_file(ctx: click.Context, filepath: str, new_pane: bool) -> None:
+    """Open a file in Obsidian."""
+    client = get_obsidian_client()
+    client.open_file(filepath, new_leaf=new_pane)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "opened": filepath})
+    else:
+        output.print_success(f"Opened {filepath}")
+
+
+# =============================================================================
+# Periodic Note Write Commands
+# =============================================================================
+
+
+@cli.command("periodic-append")
+@click.argument("period", type=click.Choice(VALID_PERIODS))
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def periodic_append(ctx: click.Context, period: str, content: str | None, content_file: str | None) -> None:
+    """Append to a periodic note (creates if doesn't exist)."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.append_periodic(period, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "period": period, "action": "appended"})
+    else:
+        output.print_success(f"Appended to {period} note")
+
+
+@cli.command("periodic-put")
+@click.argument("period", type=click.Choice(VALID_PERIODS))
+@click.argument("content", required=False)
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def periodic_put(ctx: click.Context, period: str, content: str | None, content_file: str | None) -> None:
+    """Replace content of a periodic note."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.put_periodic(period, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "period": period, "action": "replaced"})
+    else:
+        output.print_success(f"Replaced {period} note content")
+
+
+@cli.command("periodic-patch")
+@click.argument("period", type=click.Choice(VALID_PERIODS))
+@click.option(
+    "--operation", "-o",
+    type=click.Choice(["append", "prepend", "replace"]),
+    required=True,
+    help="Operation to perform",
+)
+@click.option(
+    "--target-type", "-t",
+    type=click.Choice(["heading", "block", "frontmatter"]),
+    required=True,
+    help="Type of target",
+)
+@click.option("--target", "-T", required=True, help="Target identifier")
+@click.option("--content", "-c", help="Content to insert")
+@click.option("--file", "content_file", type=click.Path(exists=True), help="Read content from file")
+@click.pass_context
+def periodic_patch(
+    ctx: click.Context,
+    period: str,
+    operation: str,
+    target_type: str,
+    target: str,
+    content: str | None,
+    content_file: str | None,
+) -> None:
+    """Patch content in a periodic note relative to a target."""
+    text = read_content(content, content_file)
+    client = get_obsidian_client()
+    client.patch_periodic(period, operation, target_type, target, text)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "period": period, "action": "patched"})
+    else:
+        output.print_success(f"Patched {period} note")
+
+
+@cli.command("periodic-delete")
+@click.argument("period", type=click.Choice(VALID_PERIODS))
+@click.option("--confirm", "-y", is_flag=True, help="Confirm deletion (required)")
+@click.pass_context
+def periodic_delete(ctx: click.Context, period: str, confirm: bool) -> None:
+    """Delete a periodic note."""
+    if not confirm:
+        raise click.ClickException("Deletion requires --confirm or -y flag to prevent accidents")
+
+    client = get_obsidian_client()
+    client.delete_periodic(period)
+
+    if ctx.obj["json"]:
+        output.print_json({"status": "success", "period": period, "action": "deleted"})
+    else:
+        output.print_success(f"Deleted {period} note")

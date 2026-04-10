@@ -1,7 +1,9 @@
 import json
 import os
 from collections.abc import Sequence
+from pathlib import Path
 
+from dotenv import load_dotenv
 from mcp.types import (
     EmbeddedResource,
     ImageContent,
@@ -11,11 +13,15 @@ from mcp.types import (
 
 from . import obsidian
 
+# Load .env from project root (3 levels up from this file: tools.py -> mcp_obsidian -> src -> project root)
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(_env_path)
+
 api_key = os.getenv("OBSIDIAN_API_KEY", "")
 obsidian_host = os.getenv("OBSIDIAN_HOST", "127.0.0.1")
 
 if api_key == "":
-    raise ValueError(f"OBSIDIAN_API_KEY environment variable required. Working directory: {os.getcwd()}")
+    raise ValueError(f"OBSIDIAN_API_KEY environment variable required. Checked: {_env_path}")
 
 TOOL_LIST_FILES_IN_VAULT = "obsidian_list_files_in_vault"
 TOOL_LIST_FILES_IN_DIR = "obsidian_list_files_in_dir"

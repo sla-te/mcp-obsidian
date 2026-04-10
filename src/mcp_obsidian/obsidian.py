@@ -247,6 +247,205 @@ class Obsidian:
 
         return self._safe_call(call_fn)
 
+    def get_server_info(self) -> Any:
+        """Get basic server information."""
+        url = f"{self.get_base_url()}/"
+
+        def call_fn():
+            response = self.client.get(url, headers=self._get_headers())
+            response.raise_for_status()
+            return response.json()
+
+        return self._safe_call(call_fn)
+
+    def get_active_file(self, type: str = "content") -> Any:
+        """Get the currently active file in Obsidian.
+
+        Args:
+            type: Type of data ('content' or 'metadata')
+
+        Returns:
+            Content or metadata of the active file
+        """
+        url = f"{self.get_base_url()}/active/"
+
+        def call_fn():
+            headers = self._get_headers()
+            if type == "metadata":
+                headers["Accept"] = "application/vnd.olrapi.note+json"
+            response = self.client.get(url, headers=headers)
+            response.raise_for_status()
+            return response.text if type == "content" else response.json()
+
+        return self._safe_call(call_fn)
+
+    def append_active(self, content: str) -> Any:
+        """Append content to the active file."""
+        url = f"{self.get_base_url()}/active/"
+
+        def call_fn():
+            response = self.client.post(
+                url,
+                headers=self._get_headers() | {"Content-Type": "text/markdown"},
+                content=content,
+            )
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def put_active(self, content: str) -> Any:
+        """Replace content of the active file."""
+        url = f"{self.get_base_url()}/active/"
+
+        def call_fn():
+            response = self.client.put(
+                url,
+                headers=self._get_headers() | {"Content-Type": "text/markdown"},
+                content=content,
+            )
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def patch_active(self, operation: str, target_type: str, target: str, content: str) -> Any:
+        """Patch content in the active file relative to a target."""
+        url = f"{self.get_base_url()}/active/"
+
+        headers = self._get_headers() | {
+            "Content-Type": "text/markdown",
+            "Operation": operation,
+            "Target-Type": target_type,
+            "Target": urllib.parse.quote(target),
+        }
+
+        def call_fn():
+            response = self.client.patch(url, headers=headers, content=content)
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def delete_active(self) -> Any:
+        """Delete the active file."""
+        url = f"{self.get_base_url()}/active/"
+
+        def call_fn():
+            response = self.client.delete(url, headers=self._get_headers())
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def list_commands(self) -> Any:
+        """Get list of available Obsidian commands."""
+        url = f"{self.get_base_url()}/commands/"
+
+        def call_fn():
+            response = self.client.get(url, headers=self._get_headers())
+            response.raise_for_status()
+            return response.json()
+
+        return self._safe_call(call_fn)
+
+    def execute_command(self, command_id: str) -> Any:
+        """Execute an Obsidian command by ID."""
+        url = f"{self.get_base_url()}/commands/{command_id}/"
+
+        def call_fn():
+            response = self.client.post(url, headers=self._get_headers())
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def open_file(self, filename: str, new_leaf: bool = False) -> Any:
+        """Open a file in Obsidian.
+
+        Args:
+            filename: Path to the file to open
+            new_leaf: Whether to open in a new pane
+        """
+        url = f"{self.get_base_url()}/open/{filename}"
+        params = {"newLeaf": str(new_leaf).lower()}
+
+        def call_fn():
+            response = self.client.post(url, headers=self._get_headers(), params=params)
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def append_periodic(self, period: str, content: str) -> Any:
+        """Append content to a periodic note (creates if doesn't exist).
+
+        Args:
+            period: The period type (daily, weekly, monthly, quarterly, yearly)
+            content: Content to append
+        """
+        url = f"{self.get_base_url()}/periodic/{period}/"
+
+        def call_fn():
+            response = self.client.post(
+                url,
+                headers=self._get_headers() | {"Content-Type": "text/markdown"},
+                content=content,
+            )
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def put_periodic(self, period: str, content: str) -> Any:
+        """Replace content of a periodic note.
+
+        Args:
+            period: The period type (daily, weekly, monthly, quarterly, yearly)
+            content: New content
+        """
+        url = f"{self.get_base_url()}/periodic/{period}/"
+
+        def call_fn():
+            response = self.client.put(
+                url,
+                headers=self._get_headers() | {"Content-Type": "text/markdown"},
+                content=content,
+            )
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def patch_periodic(self, period: str, operation: str, target_type: str, target: str, content: str) -> Any:
+        """Patch content in a periodic note relative to a target."""
+        url = f"{self.get_base_url()}/periodic/{period}/"
+
+        headers = self._get_headers() | {
+            "Content-Type": "text/markdown",
+            "Operation": operation,
+            "Target-Type": target_type,
+            "Target": urllib.parse.quote(target),
+        }
+
+        def call_fn():
+            response = self.client.patch(url, headers=headers, content=content)
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
+    def delete_periodic(self, period: str) -> Any:
+        """Delete a periodic note."""
+        url = f"{self.get_base_url()}/periodic/{period}/"
+
+        def call_fn():
+            response = self.client.delete(url, headers=self._get_headers())
+            response.raise_for_status()
+            return None
+
+        return self._safe_call(call_fn)
+
     def get_recent_changes(self, limit: int = 10, days: int = 90) -> Any:
         """Get recently modified files in the vault.
 
