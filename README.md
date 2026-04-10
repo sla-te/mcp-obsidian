@@ -6,7 +6,7 @@
 
 MCP server and CLI to interact with Obsidian via the Local REST API community plugin.
 
-<a href="https://glama.ai/mcp/servers/3wko1bhuek"><img width="380" height="200" src="https://glama.ai/mcp/servers/3wko1bhuek/badge" alt="server for Obsidian MCP server" /></a>
+[![MCP Server Badge](https://glama.ai/mcp/servers/3wko1bhuek/badge)](https://glama.ai/mcp/servers/3wko1bhuek)
 
 ## Features
 
@@ -89,8 +89,9 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 }
 ```
 
-<details>
-<summary>Development Configuration</summary>
+**Development Configuration**
+
+For local development, use the `--directory` flag:
 
 ```json
 {
@@ -105,7 +106,6 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
   }
 }
 ```
-</details>
 
 ### Example Prompts
 
