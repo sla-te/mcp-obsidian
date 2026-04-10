@@ -50,3 +50,21 @@ def list_files(ctx: click.Context, directory: str | None) -> None:
         output.print_json(files)
     else:
         output.print_lines(files)
+
+
+@cli.command("get")
+@click.argument("filepaths", nargs=-1, required=True)
+@click.pass_context
+def get_files(ctx: click.Context, filepaths: tuple[str, ...]) -> None:
+    """Get contents of one or more files."""
+    client = get_obsidian_client()
+
+    if len(filepaths) == 1:
+        content = client.get_file_contents(filepaths[0])
+    else:
+        content = client.get_batch_file_contents(list(filepaths))
+
+    if ctx.obj["json"]:
+        output.print_json(content)
+    else:
+        print(content)

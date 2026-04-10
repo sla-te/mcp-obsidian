@@ -53,3 +53,52 @@ class TestListFiles:
         assert result.exit_code == 0
         assert '"file1.md"' in result.output
         assert '"file2.md"' in result.output
+
+
+class TestGetFiles:
+    def test_get_single_file(self) -> None:
+        """Test getting a single file's contents."""
+        runner = CliRunner()
+        mock_obsidian = MagicMock()
+        mock_obsidian.get_file_contents.return_value = "# My Note\n\nContent here."
+
+        with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
+            with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
+                result = runner.invoke(cli, ["get", "notes/todo.md"])
+
+        assert result.exit_code == 0
+        assert "# My Note" in result.output
+        mock_obsidian.get_file_contents.assert_called_once_with("notes/todo.md")
+
+    def test_get_multiple_files(self) -> None:
+        """Test getting multiple files' contents."""
+        runner = CliRunner()
+        mock_obsidian = MagicMock()
+        mock_obsidian.get_batch_file_contents.return_value = (
+            "# notes/a.md\n\nContent A\n\n---\n\n"
+            "# notes/b.md\n\nContent B\n\n---\n\n"
+        )
+
+        with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
+            with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
+                result = runner.invoke(cli, ["get", "notes/a.md", "notes/b.md"])
+
+        assert result.exit_code == 0
+        assert "Content A" in result.output
+        assert "Content B" in result.output
+        mock_obsidian.get_batch_file_contents.assert_called_once_with(
+            ["notes/a.md", "notes/b.md"]
+        )
+
+    def test_get_file_json_output(self) -> None:
+        """Test getting file with JSON output."""
+        runner = CliRunner()
+        mock_obsidian = MagicMock()
+        mock_obsidian.get_file_contents.return_value = "# Note"
+
+        with patch.dict(os.environ, {"OBSIDIAN_API_KEY": "test-key"}):
+            with patch("mcp_obsidian.obsidian.Obsidian", return_value=mock_obsidian):
+                result = runner.invoke(cli, ["--json", "get", "note.md"])
+
+        assert result.exit_code == 0
+        assert '"# Note"' in result.output
